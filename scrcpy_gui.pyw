@@ -151,9 +151,14 @@ class ScrcpyGUI(tk.Tk):
     def _show_expanded_args(self):
         win = tk.Toplevel(self)
         win.title("Tham số bổ sung")
-        win.geometry("760x100")
-        win.transient(self)
         win.resizable(True, False)
+
+        # Đặt cửa sổ bên dưới nút expand 50px; chiều cao đủ hiển thị ba dòng.
+        self.update_idletasks()
+        x = self.expand_button.winfo_rootx()
+        y = self.expand_button.winfo_rooty() + self.expand_button.winfo_height() + 50
+        win.geometry(f"760x100+{x}+{y}")
+        win.transient(self)
 
         entry = ttk.Entry(win, textvariable=self.args_var)
         entry.pack(fill="x", padx=12, pady=16)
