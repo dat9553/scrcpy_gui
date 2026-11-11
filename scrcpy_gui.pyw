@@ -58,6 +58,7 @@ class ScrcpyGUI(tk.Tk):
         self.config = load_config()
         self.devices = self.config.get("devices", {})   # {serial: tên}
         self.display_map = {}                            # "serial (tên)" -> serial
+        self._expand_tooltip = None
 
         # --- Dòng 1: chọn thiết bị ---
         frm1 = ttk.LabelFrame(self, text=" Thiết bị (serial - tên) ")
@@ -86,9 +87,15 @@ class ScrcpyGUI(tk.Tk):
         frm3.pack(fill="x", padx=10, pady=4)
 
         self.args_var = tk.StringVar(value=DEFAULT_ARGS)
-        ttk.Entry(frm3, textvariable=self.args_var, width=48).pack(
-            side="left", padx=8, pady=8
+        self.args_entry = ttk.Entry(frm3, textvariable=self.args_var, width=40)
+        self.args_entry.pack(side="left", padx=(8, 4), pady=8)
+
+        self.expand_button = ttk.Button(
+            frm3, text="⤢", width=3, command=self._show_expanded_args
         )
+        self.expand_button.pack(side="left", padx=2)
+        self.expand_button.bind("<Enter>", self._show_expand_tooltip)
+        self.expand_button.bind("<Leave>", self._hide_expand_tooltip)
 
         self.arg_menu = tk.Menu(self, tearoff=0)
         for option in ("Placeholder 1", "Placeholder 2", "Placeholder 3"):
@@ -124,6 +131,34 @@ class ScrcpyGUI(tk.Tk):
         self.args_var.trace_add("write", lambda *_: self._update_preview())
 
         self.refresh_combo(select_serial=self.config.get("last_device", ""))
+
+    def _show_expand_tooltip(self, _event=None):
+        if self._expand_tooltip:
+            return
+        self._expand_tooltip = tk.Toplevel(self)
+        self._expand_tooltip.wm_overrideredirect(True)
+        self._expand_tooltip.wm_geometry(
+            f"+{self.expand_button.winfo_rootx()}+"
+            f"{self.expand_button.winfo_rooty() + self.expand_button.winfo_height()}"
+        )
+        ttk.Label(self._expand_tooltip, text="expand", padding=(4, 2)).pack()
+
+    def _hide_expand_tooltip(self, _event=None):
+        if self._expand_tooltip:
+            self._expand_tooltip.destroy()
+            self._expand_tooltip = None
+
+    def _show_expanded_args(self):
+        win = tk.Toplevel(self)
+        win.title("Tham số bổ sung")
+        win.geometry("760x100")
+        win.transient(self)
+        win.resizable(True, False)
+
+        entry = ttk.Entry(win, textvariable=self.args_var)
+        entry.pack(fill="x", padx=12, pady=16)
+        entry.focus_set()
+        entry.icursor(tk.END)
 
     def _show_arg_menu(self):
         self.arg_menu.tk_popup(
