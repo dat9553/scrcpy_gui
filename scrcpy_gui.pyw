@@ -86,8 +86,21 @@ class ScrcpyGUI(tk.Tk):
         frm3.pack(fill="x", padx=10, pady=4)
 
         self.args_var = tk.StringVar(value=DEFAULT_ARGS)
-        ttk.Entry(frm3, textvariable=self.args_var, width=65).pack(side="left", padx=8, pady=8)
-        ttk.Button(frm3, text="Thêm tham số").pack(side="left", padx=4)
+        ttk.Entry(frm3, textvariable=self.args_var, width=48).pack(
+            side="left", padx=8, pady=8
+        )
+
+        self.arg_menu = tk.Menu(self, tearoff=0)
+        for option in ("Placeholder 1", "Placeholder 2", "Placeholder 3"):
+            self.arg_menu.add_command(
+                label=option,
+                command=lambda value=option: self.add_argument(value)
+            )
+
+        self.args_button = ttk.Button(
+            frm3, text="Thêm tham số", command=self._show_arg_menu
+        )
+        self.args_button.pack(side="left", padx=4)
 
         # --- Dòng 4: nút chạy + spinner ---
         frm4 = ttk.Frame(self)
@@ -108,6 +121,17 @@ class ScrcpyGUI(tk.Tk):
                   wraplength=540, justify="left").pack(fill="x", padx=12, pady=4)
 
         self.refresh_combo(select_serial=self.config.get("last_device", ""))
+
+    def _show_arg_menu(self):
+        self.arg_menu.tk_popup(
+            self.args_button.winfo_rootx(),
+            self.args_button.winfo_rooty() + self.args_button.winfo_height()
+        )
+
+    def add_argument(self, value):
+        current = self.args_var.get().strip()
+        self.args_var.set(f"{current} {value}".strip())
+        self._update_preview()
 
     # ---------- hoạt ảnh loading ----------
     def start_spinner(self):
