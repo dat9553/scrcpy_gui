@@ -87,6 +87,7 @@ class ScrcpyGUI(tk.Tk):
 
         self.args_var = tk.StringVar(value=DEFAULT_ARGS)
         ttk.Entry(frm3, textvariable=self.args_var, width=65).pack(side="left", padx=8, pady=8)
+        ttk.Button(frm3, text="Thêm tham số").pack(side="left", padx=4)
 
         # --- Dòng 4: nút chạy + spinner ---
         frm4 = ttk.Frame(self)
