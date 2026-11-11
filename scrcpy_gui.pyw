@@ -59,6 +59,10 @@ class ScrcpyGUI(tk.Tk):
         self.devices = self.config.get("devices", {})   # {serial: tên}
         self.display_map = {}                            # "serial (tên)" -> serial
         self._expand_tooltip = None
+        self._expanded_args_window = None
+        self._expanded_args_text = None
+        self._expanded_args_trace = None
+        self._syncing_expanded_args = False
 
         # --- Dòng 1: chọn thiết bị ---
         frm1 = ttk.LabelFrame(self, text=" Thiết bị (serial - tên) ")
@@ -149,21 +153,68 @@ class ScrcpyGUI(tk.Tk):
             self._expand_tooltip = None
 
     def _show_expanded_args(self):
+        if self._expanded_args_window and self._expanded_args_window.winfo_exists():
+            self._expanded_args_window.lift()
+            self._expanded_args_text.focus_set()
+            return
+
         win = tk.Toplevel(self)
+        self._expanded_args_window = win
         win.title("Tham số bổ sung")
         win.resizable(True, False)
 
-        # Đặt cửa sổ bên dưới nút expand 50px; chiều cao đủ hiển thị ba dòng.
+        # Đặt cửa sổ bên dưới nút expand 50px; Text luôn hiển thị tối thiểu ba dòng.
         self.update_idletasks()
         x = self.expand_button.winfo_rootx()
         y = self.expand_button.winfo_rooty() + self.expand_button.winfo_height() + 50
-        win.geometry(f"760x100+{x}+{y}")
+        win.geometry(f"760x110+{x}+{y}")
         win.transient(self)
 
-        entry = ttk.Entry(win, textvariable=self.args_var)
-        entry.pack(fill="x", padx=12, pady=16)
-        entry.focus_set()
-        entry.icursor(tk.END)
+        text = tk.Text(win, height=3, wrap="none", undo=True)
+        text.pack(fill="both", expand=True, padx=8, pady=8)
+        self._expanded_args_text = text
+        text.insert("1.0", self.args_var.get())
+        text.edit_modified(False)
+        text.bind("<<Modified>>", self._on_expanded_args_modified)
+        text.focus_set()
+        text.mark_set("insert", "end-1c")
+
+        self._expanded_args_trace = self.args_var.trace_add(
+            "write", self._sync_expanded_args_from_var
+        )
+        win.protocol("WM_DELETE_WINDOW", self._close_expanded_args)
+
+    def _on_expanded_args_modified(self, _event=None):
+        text = self._expanded_args_text
+        if not text or not text.edit_modified():
+            return
+        text.edit_modified(False)
+        value = text.get("1.0", "end-1c")
+        if self.args_var.get() != value:
+            self._syncing_expanded_args = True
+            self.args_var.set(value)
+            self._syncing_expanded_args = False
+
+    def _sync_expanded_args_from_var(self, *_):
+        text = self._expanded_args_text
+        if self._syncing_expanded_args or not text or not text.winfo_exists():
+            return
+        value = self.args_var.get()
+        if text.get("1.0", "end-1c") != value:
+            self._syncing_expanded_args = True
+            text.delete("1.0", "end")
+            text.insert("1.0", value)
+            text.edit_modified(False)
+            self._syncing_expanded_args = False
+
+    def _close_expanded_args(self):
+        if self._expanded_args_trace:
+            self.args_var.trace_remove("write", self._expanded_args_trace)
+            self._expanded_args_trace = None
+        if self._expanded_args_window:
+            self._expanded_args_window.destroy()
+        self._expanded_args_window = None
+        self._expanded_args_text = None
 
     def _show_arg_menu(self):
         self.arg_menu.tk_popup(
