@@ -120,6 +120,9 @@ class ScrcpyGUI(tk.Tk):
         ttk.Label(self, textvariable=self.preview_var, foreground="gray",
                   wraplength=540, justify="left").pack(fill="x", padx=12, pady=4)
 
+        # Cập nhật preview ngay khi nội dung ô tham số thay đổi, kể cả khi bị xóa hết.
+        self.args_var.trace_add("write", lambda *_: self._update_preview())
+
         self.refresh_combo(select_serial=self.config.get("last_device", ""))
 
     def _show_arg_menu(self):
